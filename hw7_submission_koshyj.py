@@ -42,6 +42,68 @@ def score(clauses, assignment):
         if check_clause(clause, assignment):
             sum += 1
     return sum
+
+def check_clause(clauses, assignment):
+    if sum(len(clause) == 0 for clause in clauses):
+        return None
+
+    if len(clauses) == 0:
+        return assignment
+    return
+
+def clause_correct(clause, variable):
+    clauses_arr = [x for x in clauses_arr if variable not in x] # delete clauses containing alpha
+    for x in clauses_arr:
+        if ~variable in x:  # remove !alpha from all clauses
+             x.remove(~variable)
+    return clauses_arr
+
+def DPLL_alg(clauses, num_variables):
+    if assignment is None:
+        assignment = np.array([1]*num_variables)
+
+    while sum(len(clause) == 1 for clause in clauses):
+        for x in clauses:
+            if len(x) == 1:  # find a unit clause
+                if x[0] > 0:
+                    assignment[x[0]-1] = 1
+                    clauses = clause_correct(x[0], clauses)
+                    break
+                else:  # if unit clause is "False"
+                    assignment[-x[0]-1] = -1
+                    clauses = clause_correct(x[0], clauses)
+                    break
+
+    check_clause(clauses, assignment)
+    rand_var = abs(clauses[0][0])
+
+    assignment_hold, assignment_hold2 = assignment.copy()
+    clause_1, clause_2 = copy.deepcopy(clauses)
+
+    if clauses[0][0] > 0:
+        assignment_hold[rand_var-1] = 1
+        assignment_hold2[rand_var-1] = -1
+    else:
+        assignment_hold[rand_var-1] = -1
+        assignment_hold2[rand_var-1] = 1
+
+
+    clause_1 = clause_correct(clause_1[0][0], clause_1)
+    clause_2 = clause_correct(-clause_2[0][0], clause_2)
+
+    check_T = DPLL_alg(num_variables, clause_1)
+    if check_T is not None:
+        assignment = check_T
+        return assignment
+        
+    check_F = DPLL_alg(num_variables, clause_2)
+    if check_F is not None:
+        assignment = check_F
+        return assignment
+    else:
+        assignment = None
+
+    return assignment
        
 def backtrack_search (num_variables, clauses):
     print('Backtracking search started')
@@ -76,54 +138,6 @@ def random_walk(num_variables, clauses):
     print('Random walk search completed successfully')
     return assignment
 
-#literal hill climb with a better random walk set and also with implementation of tabu local search. Index each state with dictionary vals to check against total set.
-def hillclimb_with_tabu(num_variables, clauses):
-    print('Hill Climb with tabu search started')
-
-    def better_random():
-        # random start state of -1s and 1s
-        states = []
-        state_scores = []
-        for x in range(50):
-            states.append(
-                np.array([2*random.randint(0, 1)-1 for _ in range(num_variables)]))
-            state_scores.append(score(clauses, states[x]))
-        # return a state with the max score out of the 50 random states
-        return states[state_scores.index(max(state_scores))]
-
-    assignment = better_random()
-    tabuDict = {}
-    while True:
-
-        # if true we found a solution
-        if True == check(clauses, assignment):
-            break
-
-        scores = [0] * num_variables
-        for i in range(num_variables):
-            assignment[i] *= -1
-            scores[i] = score(clauses, assignment)
-            assignment[i] *= -1
-
-        # set the new state based on the max score
-        newStateIndex = scores.index(max(scores))
-
-        # if the new state has higher score go to that state
-        if scores[newStateIndex] > score(clauses, assignment):
-            assignment[newStateIndex] *= -1
-            # if the new state has already been explored generate a new state
-            if str(assignment) in tabuDict:
-                assignment = better_random()
-            # add the next assignment to the tabu table
-            tabuDict[str(assignment)] = 1
-        # else pick a new random starting point
-        else:
-            assignment = better_random()
-
-    print('Hill Climb seach completed successfully')
-    print('len(tabuDict):', len(tabuDict))
-    return assignment
-
 # Flip more than one variable at a time
 def generate_solvable_problem(num_variables): 
     global VERBOSE
@@ -151,11 +165,9 @@ def generate_solvable_problem(num_variables):
         print('One solution is {} which checks to {}'.format(target,check(clauses,target)))
         
     return clauses
-
-
-
+    
 def hw7_submission(num_variables, clauses, timeout):  #timeout is provided in case your method wants to know
-    return hillclimb_with_tabu(num_variables, clauses)
+    return DPLL_alg(clauses, num_variables)
 
 def solve_SAT(file,save,timeout,num_variables,algorithms,verbose):
     global VERBOSE
