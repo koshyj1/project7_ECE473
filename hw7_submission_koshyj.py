@@ -43,67 +43,96 @@ def score(clauses, assignment):
             sum += 1
     return sum
 
-def check_clause(clauses, assignment):
-    if sum(len(clause) == 0 for clause in clauses):
-        return None
+def get_random(clauses, num_variables):
+    states = []
+    state_scores = []
+    for x in range(50):
+        states.append(np.array([2 * random.randint(0, 1)-1 for _ in range(num_variables)]))
+        state_scores.append(score(clauses, states[x]))
+    return states[state_scores.index(max(state_scores))]
 
-    if len(clauses) == 0:
-        return assignment
-    return
+def simple_hillclimb(clauses, num_variables):
+    assignment = get_random(clauses, num_variables)
+    breakpoint = 1
+    while (breakpoint):
+        if breakpoint == check(clauses, assignment):
+            break
 
-def clause_correct(clause, variable):
-    clauses_arr = [x for x in clauses_arr if variable not in x] # delete clauses containing alpha
-    for x in clauses_arr:
-        if ~variable in x:  # remove !alpha from all clauses
-             x.remove(~variable)
-    return clauses_arr
+        scores = [0] * num_variables
+        for x in range(num_variables):
+            assignment[x] *= -1
+            scores[x] = score(clauses, assignment)
+            assignment[x] *= -1
 
-def DPLL_alg(clauses, num_variables):
-    if assignment is None:
-        assignment = np.array([1]*num_variables)
+        newStateIndex = scores.index(max(scores))
 
-    while sum(len(clause) == 1 for clause in clauses):
-        for x in clauses:
-            if len(x) == 1:  # find a unit clause
-                if x[0] > 0:
-                    assignment[x[0]-1] = 1
-                    clauses = clause_correct(x[0], clauses)
-                    break
-                else:  # if unit clause is "False"
-                    assignment[-x[0]-1] = -1
-                    clauses = clause_correct(x[0], clauses)
-                    break
-
-    check_clause(clauses, assignment)
-    rand_var = abs(clauses[0][0])
-
-    assignment_hold, assignment_hold2 = assignment.copy()
-    clause_1, clause_2 = copy.deepcopy(clauses)
-
-    if clauses[0][0] > 0:
-        assignment_hold[rand_var-1] = 1
-        assignment_hold2[rand_var-1] = -1
-    else:
-        assignment_hold[rand_var-1] = -1
-        assignment_hold2[rand_var-1] = 1
-
-
-    clause_1 = clause_correct(clause_1[0][0], clause_1)
-    clause_2 = clause_correct(-clause_2[0][0], clause_2)
-
-    check_T = DPLL_alg(num_variables, clause_1)
-    if check_T is not None:
-        assignment = check_T
-        return assignment
-        
-    check_F = DPLL_alg(num_variables, clause_2)
-    if check_F is not None:
-        assignment = check_F
-        return assignment
-    else:
-        assignment = None
-
+        if scores[newStateIndex] <= score(clauses, assignment):
+            assignment = get_random(clauses, num_variables)
+        else:
+            assignment[newStateIndex] *= -1    
     return assignment
+
+# def check_clause(clauses, assignment):
+#     if sum(len(clause) == 0 for clause in clauses):
+#         return None
+
+#     if len(clauses) == 0:
+#         return assignment
+#     return
+
+# def clause_correct(clause, variable):
+#     clauses_arr = [x for x in clauses_arr if variable not in x] # delete clauses containing alpha
+#     for x in clauses_arr:
+#         if ~variable in x:  # remove !alpha from all clauses
+#              x.remove(~variable)
+#     return clauses_arr
+
+# def DPLL_alg(clauses, num_variables):
+#     if assignment is None:
+#         assignment = np.array([1]*num_variables)
+
+#     while sum(len(clause) == 1 for clause in clauses):
+#         for x in clauses:
+#             if len(x) == 1:
+#                 if x[0] <= 0:
+#                     assignment[-x[0]-1] = -1
+#                     clauses = clause_correct(x[0], clauses)
+#                     break
+#                 else:
+#                     assignment[x[0]-1] = 1
+#                     clauses = clause_correct(x[0], clauses)
+#                     break
+
+#     check_clause(clauses, assignment)
+#     rand_var = abs(clauses[0][0])
+
+#     assignment_hold, assignment_hold2 = assignment.copy()
+#     clause_1, clause_2 = copy.deepcopy(clauses)
+
+#     if clauses[0][0] > 0:
+#         assignment_hold[rand_var-1] = 1
+#         assignment_hold2[rand_var-1] = -1
+#     else:
+#         assignment_hold[rand_var-1] = -1
+#         assignment_hold2[rand_var-1] = 1
+
+
+#     clause_1 = clause_correct(clause_1[0][0], clause_1)
+#     clause_2 = clause_correct(-clause_2[0][0], clause_2)
+
+#     check_T = DPLL_alg(num_variables, clause_1)
+#     if check_T is not None:
+#         assignment = check_T
+#         return assignment
+        
+#     check_F = DPLL_alg(num_variables, clause_2)
+#     if check_F is not None:
+#         assignment = check_F
+#         return assignment
+#     else:
+#         assignment = None
+
+#     return assignment
        
 def backtrack_search (num_variables, clauses):
     print('Backtracking search started')
@@ -165,9 +194,9 @@ def generate_solvable_problem(num_variables):
         print('One solution is {} which checks to {}'.format(target,check(clauses,target)))
         
     return clauses
-    
+
 def hw7_submission(num_variables, clauses, timeout):  #timeout is provided in case your method wants to know
-    return DPLL_alg(clauses, num_variables)
+    return simple_hillclimb(clauses, num_variables)
 
 def solve_SAT(file,save,timeout,num_variables,algorithms,verbose):
     global VERBOSE
