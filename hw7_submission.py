@@ -1,9 +1,22 @@
+'''
+Project 7 - ECE 473
+Joshua Koshy, Zachary Williams, Bilal Salha
+
+Algorithm Implementation of HillClimb with Random Restart
+'''
+
+from ast import Num
+from asyncio import ALL_COMPLETED
 import random
 import numpy as np
 import signal, datetime
 import argparse
 import copy
 import json
+import time
+import psutil
+import math
+import concurrent.futures
 
 class TimeoutException(Exception):
     pass
@@ -61,11 +74,134 @@ def random_walk(num_variables, clauses):
     while True:
         if True==check(clauses,assignment):
             break
-        var_to_flip=randint(1,num_variables)
+        var_to_flip=random.randint(1,num_variables)
         assignment[var_to_flip-1] *= -1
     print('Random walk search completed successfully')
     return assignment
 
+# Returns number of correct clauses: 
+def get_score(assignment, clauses):
+    correct_clauses = filter(lambda clause: check_clause(clause, assignment), clauses)
+    return sum(1 for _ in correct_clauses)
+
+# Returns number of correct clauses for given variable
+def get_var_score(var, assignment, clause_dict):
+
+    var_clauses = clause_dict[var]
+    score = 0
+    for clause in var_clauses:
+        if check_clause(clause, assignment):
+            score += 1
+
+    return score
+
+# Helper function for hillclimb to return first var.
+def sort_by_first(tuple):
+    return tuple[0]
+
+# Helper function for hillclimb to 
+def sorted_insert(list, pair):
+    
+    list_length = len(list)
+
+    index = list_length
+
+    # Find last item less than the pair's key
+    for i in range(list_length):
+      if list[i][0] < pair[0]:
+        index = i
+        break
+  
+    # Insert the item into the list
+    if index == list_length:
+      list.append(pair)
+    else:
+      list[index] = pair
+
+    return list
+
+
+# stocahstic hillclimb that deals with simple changes and variable implementations as values increase on the set of the given variables.
+def stochastic_hillclimb(num_variables, clauses, timeout):
+    def randAssignment(num_variables):
+        # random start state of -1s and 1s
+        states = []
+        score = []
+        for x in range(50):
+            # random set against values
+            states.append(np.array([2 * random.randint(0, 1) - 1 for _ in range(num_variables)]))
+            #append set values against each num_variables
+            score.append(get_score(states[x], clauses))
+        # return a state with the max score out of the 50 random states
+        max_score = (max(score))
+        return states[score.index(max(score))]
+    
+    def calcFlippedVar(clause_dict, state, var, next_actions):
+        initial_score = get_var_score(var, state, clause_dict)
+
+        state[to_flip - 1] *= -1
+        if("".join(map(str.state)) not in tabu):
+            final_score = get_var_score(to_flip, state, clause_dict)
+            next_actions = sorted_insert(next_actions, (final_score - initial_score, to_flip))
+        
+        return
+    
+    startTime = datetime.datetime.now()
+    state = randAssignment(num_variables)
+    #state = np.ones(num_variables)
+    total_score = get_score(state, clauses)
+    num_clauses = len(clauses)
+    std_dev = 0.5 * math.sqrt(num_variables)
+    scores = {}
+    tabu = []
+
+    # Construct clause dictionary
+    clause_dict = {}
+    for var in range(1, num_variables + 1):
+        
+        clause_dict[var] = []
+        for clause in clauses:
+                if (var in clause) or (-var in clause):
+                    clause_dict[var].append(clause)
+
+    while total_score != num_clauses:
+        currTime = datetime.datetime.now()
+        if((currTime - startTime).total_seconds() > timeout/10):
+            startTime = currTime
+            state = randAssignment(num_variables)
+        
+        #if len(tabu) > num_variables:
+        #    tabu.pop(0)
+        tabu.append("".join(map(str,state)))
+
+        # Generate next states
+        next_actions = []
+
+        for to_flip in range(1, num_variables):
+            initial_score = get_var_score(to_flip, state, clause_dict)
+
+            state[to_flip - 1] *= -1
+            if("".join(map(str,state)) not in tabu):
+                final_score = get_var_score(to_flip, state, clause_dict)
+                next_actions = sorted_insert(next_actions, (final_score - initial_score, to_flip))
+            state[to_flip - 1] *= -1
+    
+        std_dev = 0.5 * math.sqrt(len(next_actions))
+        best_action = min(int(abs(np.random.normal(loc=0,scale=std_dev,size=1))), len(next_actions)-1)
+        to_flip = next_actions[best_action][1]
+        #to_flip = next_actions[0][1]
+        state[to_flip - 1] *= -1
+
+        if tuple(state) not in scores.keys():
+            scores[tuple(state)] = get_score(state, clauses)
+        total_score = scores[tuple(state)]
+        
+        #print(str(total_score) + "/" + str(num_clauses))
+        
+    print('Stochastic Hill Climb search completed successfully')
+    return state
+
+# Flip more than one variable at a time
 def generate_solvable_problem(num_variables): 
     global VERBOSE
     
@@ -76,14 +212,14 @@ def generate_solvable_problem(num_variables):
     num_clauses=round(clauses_per_variable*num_variables)
 
     # this assignment will solve the problem
-    target = np.array([2*randint(0,1)-1 for _ in range(num_variables)]) 
+    target = np.array([2*random.randint(0,1)-1 for _ in range(num_variables)]) 
     clauses=[]
     for i in range(num_clauses):
         seeking = True
         while seeking:
-            clause=sorted((sample(range(0,num_variables),k))) # choose k variables at random 
+            clause=sorted((random.sample(range(0,num_variables),k))) # choose k variables at random 
             clause=[i+1 for i in clause]
-            clause=[(2*randint(0,1)-1)*clause[x] for x in range(k)] # choose their signs at random
+            clause=[(2*random.randint(0,1)-1)*clause[x] for x in range(k)] # choose their signs at random
             seeking = not check_clause(clause,target)
         clauses.append(clause)
 
@@ -94,7 +230,7 @@ def generate_solvable_problem(num_variables):
     return clauses
 
 def hw7_submission(num_variables, clauses, timeout):  #timeout is provided in case your method wants to know
-    raise(Exception('NotImplemented'))
+    return stochastic_hillclimb(num_variables, clauses, timeout)
 
 def solve_SAT(file,save,timeout,num_variables,algorithms,verbose):
     global VERBOSE
