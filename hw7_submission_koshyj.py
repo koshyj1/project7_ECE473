@@ -47,7 +47,7 @@ def get_random(clauses, num_variables):
     score = []
     state = []
     for x in range(100):
-        set_range = [random.randint(0, 1)-1 for _ in range(num_variables)]
+        set_range = [random.randint(0, 1) - 1 for _ in range(num_variables)]
         state.append(np.array(set_range))
         score.append(score(clauses, state[x]))
     return state[score.index(max(score))]
