@@ -6,7 +6,10 @@ import copy
 import json
 import time
 import math
-
+'''
+homework 7 - koshyj testing suite
+check for dpll and hillclimb alg
+'''
 class TimeoutException(Exception):
     pass
 
@@ -43,6 +46,7 @@ def score(clauses, assignment):
             sum += 1
     return sum
 
+# find random value for set in next state actions on algorithm
 def get_random(clauses, num_variables):
     range_set = 100
     score = []
@@ -52,17 +56,22 @@ def get_random(clauses, num_variables):
         state.append(np.array(set_range))
         score.append(score(clauses, state[x]))
     max_score = max(score)
-    rand_var = state[score.index(max_score)]
-    return rand_var
+    start_state = state[score.index(max_score)]
+    return start_state
 
+# hill climb algorithm that works efficiently with some added optimizations. First check is that random start given numvariables and clauses that are accesible to be used.
+# The algorithm then continues down and makes a check for the best score possible while lookng through that start state, a new state is chosen every time a solution is not followed or made.
+# This will then find the solution after the check has been made for best case.
 def simple_hillclimb(clauses, num_variables):
     if clauses == None:
         return False
         
     assignment = get_random(clauses, num_variables)
     breakpoint = 1
+
     while (breakpoint):
-        if breakpoint == check(clauses, assignment):
+        main_check = check(clauses, assignment)
+        if breakpoint == main_check:
             break
 
         score = [0] * num_variables
@@ -70,8 +79,8 @@ def simple_hillclimb(clauses, num_variables):
             assignment[x] *= -1
             score[x] = score(clauses, assignment)
             assignment[x] *= -1
-
-        next_state = score.index(max(score))
+            max_score = max(score)
+        next_state = score.index(max_score)
 
         if score[next_state] <= score(clauses, assignment):
             assignment = get_random(clauses, num_variables)
