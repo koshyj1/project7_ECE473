@@ -2,7 +2,8 @@
 Project 7 - ECE 473
 Joshua Koshy, Zachary Williams, Bilal Salha
 
-Algorithm Implementation of HillClimb with Random Restart
+Algorithm Implementation of Stochastic HillClimb with Random Restart
+Our algorithm also uses a tabu list and score hashing to prevent redundant calculations
 '''
 
 from ast import Num
@@ -99,7 +100,7 @@ def get_var_score(var, assignment, clause_dict):
 def sort_by_first(tuple):
     return tuple[0]
 
-# Helper function for hillclimb to 
+# Helper function for hillclimb to sort states as they are generated
 def sorted_insert(list, pair):
     
     list_length = len(list)
@@ -136,24 +137,13 @@ def stochastic_hillclimb(num_variables, clauses, timeout):
         max_score = (max(score))
         return states[score.index(max(score))]
     
-    def calcFlippedVar(clause_dict, state, var, next_actions):
-        initial_score = get_var_score(var, state, clause_dict)
-
-        state[to_flip - 1] *= -1
-        if("".join(map(str.state)) not in tabu):
-            final_score = get_var_score(to_flip, state, clause_dict)
-            next_actions = sorted_insert(next_actions, (final_score - initial_score, to_flip))
-        
-        return
-    
-    startTime = datetime.datetime.now()
+    startTime = datetime.datetime.now() # Used for random restarts
     state = randAssignment(num_variables)
-    #state = np.ones(num_variables)
     total_score = get_score(state, clauses)
     num_clauses = len(clauses)
     std_dev = 0.5 * math.sqrt(num_variables)
-    scores = {}
-    tabu = []
+    scores = {} # Used for hashing scores
+    tabu = [] # Tabu list
 
     # Construct clause dictionary
     clause_dict = {}
@@ -164,19 +154,21 @@ def stochastic_hillclimb(num_variables, clauses, timeout):
                 if (var in clause) or (-var in clause):
                     clause_dict[var].append(clause)
 
+    # Main body of function - iterates through neighbor states until solution state is found
     while total_score != num_clauses:
+        # Random resets if timeout/10 has passed since last random restart
         currTime = datetime.datetime.now()
         if((currTime - startTime).total_seconds() > timeout/10):
             startTime = currTime
             state = randAssignment(num_variables)
         
+        #Add any state already used to tabu list
         #if len(tabu) > num_variables:
         #    tabu.pop(0)
         tabu.append("".join(map(str,state)))
 
         # Generate next states
         next_actions = []
-
         for to_flip in range(1, num_variables):
             initial_score = get_var_score(to_flip, state, clause_dict)
 
@@ -186,12 +178,14 @@ def stochastic_hillclimb(num_variables, clauses, timeout):
                 next_actions = sorted_insert(next_actions, (final_score - initial_score, to_flip))
             state[to_flip - 1] *= -1
     
+        # Randomly decide between all next actions
         std_dev = 0.5 * math.sqrt(len(next_actions))
         best_action = min(int(abs(np.random.normal(loc=0,scale=std_dev,size=1))), len(next_actions)-1)
         to_flip = next_actions[best_action][1]
         #to_flip = next_actions[0][1]
         state[to_flip - 1] *= -1
 
+        #only calculate score if it has never been calculated before
         if tuple(state) not in scores.keys():
             scores[tuple(state)] = get_score(state, clauses)
         total_score = scores[tuple(state)]
