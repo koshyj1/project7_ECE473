@@ -91,68 +91,6 @@ def simple_hillclimb(clauses, num_variables):
         return False
 
     return assignment
-
-# def check_clause(clauses, assignment):
-#     if sum(len(clause) == 0 for clause in clauses):
-#         return None
-
-#     if len(clauses) == 0:
-#         return assignment
-#     return
-
-# def clause_correct(clause, variable):
-#     clauses_arr = [x for x in clauses_arr if variable not in x] # delete clauses containing alpha
-#     for x in clauses_arr:
-#         if ~variable in x:  # remove !alpha from all clauses
-#              x.remove(~variable)
-#     return clauses_arr
-
-# def DPLL_alg(clauses, num_variables):
-#     if assignment is None:
-#         assignment = np.array([1]*num_variables)
-
-#     while sum(len(clause) == 1 for clause in clauses):
-#         for x in clauses:
-#             if len(x) == 1:
-#                 if x[0] <= 0:
-#                     assignment[-x[0]-1] = -1
-#                     clauses = clause_correct(x[0], clauses)
-#                     break
-#                 else:
-#                     assignment[x[0]-1] = 1
-#                     clauses = clause_correct(x[0], clauses)
-#                     break
-
-#     check_clause(clauses, assignment)
-#     rand_var = abs(clauses[0][0])
-
-#     assignment_hold, assignment_hold2 = assignment.copy()
-#     clause_1, clause_2 = copy.deepcopy(clauses)
-
-#     if clauses[0][0] > 0:
-#         assignment_hold[rand_var-1] = 1
-#         assignment_hold2[rand_var-1] = -1
-#     else:
-#         assignment_hold[rand_var-1] = -1
-#         assignment_hold2[rand_var-1] = 1
-
-
-#     clause_1 = clause_correct(clause_1[0][0], clause_1)
-#     clause_2 = clause_correct(-clause_2[0][0], clause_2)
-
-#     check_T = DPLL_alg(num_variables, clause_1)
-#     if check_T is not None:
-#         assignment = check_T
-#         return assignment
-        
-#     check_F = DPLL_alg(num_variables, clause_2)
-#     if check_F is not None:
-#         assignment = check_F
-#         return assignment
-#     else:
-#         assignment = None
-
-#     return assignment
        
 def backtrack_search (num_variables, clauses):
     print('Backtracking search started')
