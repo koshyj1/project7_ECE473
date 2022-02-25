@@ -44,13 +44,16 @@ def score(clauses, assignment):
     return sum
 
 def get_random(clauses, num_variables):
+    range_set = 100
     score = []
     state = []
-    for x in range(100):
+    for x in range(range_set):
         set_range = [random.randint(0, 1) - 1 for _ in range(num_variables)]
         state.append(np.array(set_range))
         score.append(score(clauses, state[x]))
-    return state[score.index(max(score))]
+    max_score = max(score)
+    rand_var = state[score.index(max_score)]
+    return rand_var
 
 def simple_hillclimb(clauses, num_variables):
     if clauses == None:
