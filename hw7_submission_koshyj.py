@@ -45,31 +45,39 @@ def score(clauses, assignment):
 
 def get_random(clauses, num_variables):
     states = []
-    state_scores = []
-    for x in range(50):
-        states.append(np.array([2 * random.randint(0, 1)-1 for _ in range(num_variables)]))
-        state_scores.append(score(clauses, states[x]))
-    return states[state_scores.index(max(state_scores))]
+    score = []
+    for x in range(100):
+        set_range = [2 * random.randint(0, 1)-1 for _ in range(num_variables)]
+        states.append(np.array(set_range))
+        score.append(score(clauses, states[x]))
+    return states[score.index(max(score))]
 
 def simple_hillclimb(clauses, num_variables):
+    if clauses == None:
+        return False
+        
     assignment = get_random(clauses, num_variables)
     breakpoint = 1
     while (breakpoint):
         if breakpoint == check(clauses, assignment):
             break
 
-        scores = [0] * num_variables
+        score = [0] * num_variables
         for x in range(num_variables):
             assignment[x] *= -1
-            scores[x] = score(clauses, assignment)
+            score[x] = score(clauses, assignment)
             assignment[x] *= -1
 
-        newStateIndex = scores.index(max(scores))
+        next_state = score.index(max(score))
 
-        if scores[newStateIndex] <= score(clauses, assignment):
+        if score[next_state] <= score(clauses, assignment):
             assignment = get_random(clauses, num_variables)
         else:
-            assignment[newStateIndex] *= -1    
+            assignment[next_state] *= -1    
+
+    if assignment == None:
+        return False
+
     return assignment
 
 # def check_clause(clauses, assignment):
