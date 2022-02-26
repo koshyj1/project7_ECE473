@@ -122,23 +122,27 @@ def sorted_insert(list, pair):
     return list
 
 
-# stocahstic hillclimb that deals with simple changes and variable implementations as values increase on the set of the given variables.
+# stocahstic hillclimb that deals with simple changes and variable implementations as values increase on the set of the given variables. This incorporations uses a tabu list with hashing to determine next state actions and and redudant optimal path solutions that may exist.
 def stochastic_hillclimb(num_variables, clauses, timeout):
+    # random generation of the starting assignment that can be used to find a random start. From readings, this is a faster notation of finding the aproxiamte solution rather than a methodical way.
     def randAssignment(num_variables):
-        # random start state of -1s and 1s
-        states = []
         score = []
-        for x in range(50):
+        states = []
+        # can adjust change set on num_variables as well, higher variable cases may need better assignment.
+        goal_set = 50
+        for x in range(goal_set):
             # random set against values
+            # states[x] = np.array([2 * random.randint(0, 1) - 1 for _ in range(num_variables)])
             states.append(np.array([2 * random.randint(0, 1) - 1 for _ in range(num_variables)]))
-            #append set values against each num_variables
+            # set appended to the state action in index against its clause and called from 'get_score'
             score.append(get_score(states[x], clauses))
         # return a state with the max score out of the 50 random states
         max_score = (max(score))
-        return states[score.index(max(score))]
+        return states[score.index(max_score)]
     
     startTime = datetime.datetime.now() # Used for random restarts
     state = randAssignment(num_variables)
+    # print(state)
     total_score = get_score(state, clauses)
     num_clauses = len(clauses)
     std_dev = 0.5 * math.sqrt(num_variables)
@@ -148,7 +152,7 @@ def stochastic_hillclimb(num_variables, clauses, timeout):
     # Construct clause dictionary
     clause_dict = {}
     for var in range(1, num_variables + 1):
-        
+        #set each clause dictionary in clause from set of clauses
         clause_dict[var] = []
         for clause in clauses:
                 if (var in clause) or (-var in clause):
@@ -169,9 +173,10 @@ def stochastic_hillclimb(num_variables, clauses, timeout):
 
         # Generate next states
         next_actions = []
+        # similar manuvering to the random assignment
         for to_flip in range(1, num_variables):
             initial_score = get_var_score(to_flip, state, clause_dict)
-
+            # set next flip set and make set from the pre_action, actual state, and the clauses dictionary that is built in given range.
             state[to_flip - 1] *= -1
             if("".join(map(str,state)) not in tabu):
                 final_score = get_var_score(to_flip, state, clause_dict)
@@ -180,6 +185,7 @@ def stochastic_hillclimb(num_variables, clauses, timeout):
     
         # Randomly decide between all next actions
         std_dev = 0.5 * math.sqrt(len(next_actions))
+        #find best minimization and deep end of the optimal solution
         best_action = min(int(abs(np.random.normal(loc=0,scale=std_dev,size=1))), len(next_actions)-1)
         to_flip = next_actions[best_action][1]
         #to_flip = next_actions[0][1]
